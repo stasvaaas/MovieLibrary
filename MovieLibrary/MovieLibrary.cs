@@ -11,35 +11,41 @@ namespace MovieLibrary
     internal class MovieLibrary: IEnumerable
     {
 
-        private List<string> _ordinaryMovies = new List<string>
+        private Dictionary<int, string> _ordinaryMovies = new Dictionary<int, string>
         {
-            "ordinary movie 1",
-            "ordinary movie 2",
-            "ordinary movie 3"
+            {1, "ordinary movie 1" },
+            {2, "ordinary movie 2" },
+            {3, "ordinary movie 3" }
         };
 
-        private List<string> _adultMovies = new List<string>
+        private Dictionary<int, string> _adultMovies = new Dictionary<int, string>
         {
-            "adult movie 1",
-            "adult movie 2",
-            "adult movie 3"
+            {101, "adult movie 1" },
+            {102, "adult movie 2" },
+            {103, "adult movie 3" }
         };
 
         public string GetMovie(int id)
         {
-            if (IsNightTime())
+            if (!IsNightTime())
             {
-                List<string> _allMovies = _ordinaryMovies.Concat(_adultMovies).ToList();
-                return _allMovies[id];
-            }
-            else if (id >= 0 && id < _ordinaryMovies.Count)
-            {
-                return _ordinaryMovies[id];
+                if (_ordinaryMovies.ContainsKey(id))
+                {
+                    return _ordinaryMovies[id];
+                }
             }
             else
             {
-                throw new ArgumentException("Movie not found.");
+                if(_ordinaryMovies.ContainsKey(id))
+                {
+                    return _ordinaryMovies[id];
+                }
+                if(_adultMovies.ContainsKey(id))
+                {
+                    return _adultMovies[id];
+                }
             }
+            return "No movie was found";
         }
 
         private bool IsNightTime()
@@ -47,12 +53,22 @@ namespace MovieLibrary
             DateTime now = DateTime.Now;
             int hour = now.Hour;
 
-            return hour < 7 || hour >= 23;
+            return hour <= 7 || hour >= 23;
         }
 
         public IEnumerator GetEnumerator()
         {
-            return GetAllMovies().GetEnumerator();
+            if(IsNightTime())
+            {
+                List<string> values = _adultMovies.Values.ToList();
+                values.AddRange(_ordinaryMovies.Values.ToList());
+                return new MovieEnum(values);
+            }
+            else
+            {
+                List<string> values = _ordinaryMovies.Values.ToList();
+                    return new MovieEnum(values);
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -64,10 +80,34 @@ namespace MovieLibrary
         {
             get { return GetMovie(id); }
         }
+    }
 
-        private List<string> GetAllMovies()
+    public class MovieEnum : IEnumerator
+    {
+        List<string> _movies = new List<string>();
+        int _position = -1;
+
+        public MovieEnum(List<string> list)
         {
-            return IsNightTime() ? _ordinaryMovies.Concat(_adultMovies).ToList() : _ordinaryMovies;
+            _movies = list;
+        }
+        public object Current
+        {
+            get
+            {
+                return _movies.ElementAt(_position);
+            }
+        }
+
+        public bool MoveNext()
+        {
+            _position++;
+            return (_position < _movies.Count);
+        }
+
+        public void Reset()
+        {
+            _position = -1;
         }
     }
 }
